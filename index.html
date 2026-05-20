@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>汕头两轮车天气预报</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #3b82f6;
+      --primary-dark: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+      --radius-2xl: 24px;
+      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background-attachment: fixed;
+      color: var(--gray-800);
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: white;
+      border-radius: var(--radius-2xl);
+      padding: 32px;
+      box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(10px);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    h1 {
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    h1 i {
+      color: var(--primary);
+    }
+
+    .desc {
+      color: var(--gray-500);
+      font-size: 16px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+      background: var(--gray-50);
+      padding: 24px;
+      border-radius: var(--radius-xl);
+    }
+
+    .control-box {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .control-box label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--gray-700);
+      font-size: 14px;
+    }
+
+    .control-box select,
+    .control-box input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      font-size: 16px;
+      background: white;
+      transition: var(--transition);
+      color: var(--gray-800);
+    }
+
+    .control-box select:focus,
+    .control-box input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    #refreshBtn {
+      width: 100%;
+      padding: 14px 24px;
+      border: none;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.4);
+    }
+
+    #refreshBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.5);
+    }
+
+    #refreshBtn:active {
+      transform: translateY(0);
+    }
+
+    #refreshBtn.loading {
+      pointer-events: none;
+      opacity: 0.8;
+    }
+
+    #refreshBtn.loading i {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--gray-200);
+    }
+
+    table {
+      width: 100%;
+      min-width: 500px;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: var(--gray-50);
+    }
+
+    th {
+      padding: 18px 20px;
+      text-align: left;
+      border-bottom: 2px solid var(--gray-200);
+      font-weight: 600;
+      color: var(--gray-700);
+      font-size: 15px;
+    }
+
+    td {
+      padding: 20px;
+      text-align: left;
+      border-bottom: 1px solid var(--gray-100);
+      vertical-align: middle;
+      transition: var(--transition);
+    }
+
+    tr:hover {
+      background: var(--gray-50);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .good {
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    .normal {
+      color: var(--warning);
+      font-weight: 600;
+    }
+
+    .bad {
+      color: var(--danger);
+      font-weight: 600;
+    }
+
+    .weather-info {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .weather-main {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+    }
+
+    .weather-main i {
+      font-size: 18px;
+    }
+
+    .weather-detail {
+      color: var(--gray-500);
+      font-size: 13px;
+      padding-left: 26px;
+    }
+
+    .temp-range {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      margin: 4px 0;
+    }
+
+    .temp-range i {
+      color: var(--primary);
+    }
+
+    .date-text {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--gray-800);
+      margin-bottom: 4px;
+    }
+
+    .loading, .error {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--gray-500);
+      font-size: 16px;
+    }
+
+    .loading i, .error i {
+      font-size: 48px;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .loading i {
+      color: var(--primary);
+      animation: spin 1s linear infinite;
+    }
+
+    .error i {
+      color: var(--danger);
+    }
+
+    .footer {
+      margin-top: 24px;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 14px;
+    }
+
+    .footer a {
+      color: rgba(255, 255, 255, 0.9);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* 移动端优化 */
+    @media (max-width: 768px) {
+      body {
+        padding: 12px;
+      }
+
+      .card {
+        padding: 20px;
+        border-radius: var(--radius-xl);
+      }
+
+      h1 {
+        font-size: 28px;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .desc {
+        font-size: 14px;
+      }
+
+      .controls {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        padding: 20px;
+        margin-bottom: 24px;
+      }
+
+      .control-box select,
+      .control-box input,
+      #refreshBtn {
+        padding: 12px 16px;
+        font-size: 15px;
+      }
+
+      /* 移动端表格转卡片布局 */
+      .table-wrap {
+        overflow: visible;
+        border: none;
+      }
+
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+
+      thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+      }
+
+      tr {
+        margin-bottom: 20px;
+        background: white;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+        border: 1px solid var(--gray-200);
+      }
+
+      td {
+        border: none;
+        padding: 16px;
+        position: relative;
+        border-bottom: 1px solid var(--gray-100);
+      }
+
+      td:last-child {
+        border-bottom: none;
+      }
+
+      td:before {
+        position: static;
+        display: block;
+        margin-bottom: 8px;
+        width: 100%;
+        white-space: nowrap;
+        font-weight: 600;
+        color: var(--gray-600);
+      }
+
+      td:nth-of-type(1):before { content: "上午骑行"; }
+      td:nth-of-type(2):before { content: "晚高峰骑行"; }
+
+      .weather-info {
+        padding-left: 0;
+      }
+
+      .loading, .error {
+        padding: 40px 20px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 24px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .controls {
+        padding: 16px;
+      }
+
+      td {
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <h1><i class="fas fa-motorcycle"></i> 汕头两轮车天气预报</h1>
+        <p class="desc">基于小时级降雨概率与温度，分析上下班骑两轮车是否适合</p>
+      </div>
+
+      <div class="controls">
+        <div class="control-box">
+          <label><i class="fas fa-map-marker-alt"></i> 选择街道</label>
+          <select id="townSelect"></select>
+        </div>
+
+        <div class="control-box">
+          <label><i class="fas fa-sun"></i> 上午骑行时间</label>
+          <input type="time" id="time1" value="08:20">
+        </div>
+
+        <div class="control-box">
+          <label><i class="fas fa-moon"></i> 晚高峰时间</label>
+          <input type="time" id="time2" value="17:40">
+        </div>
+
+        <div class="control-box">
+          <label>&nbsp;</label>
+          <button id="refreshBtn">
+            <i class="fas fa-sync-alt"></i> 刷新天气
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th id="morningTitle">上午 07:30</th>
+              <th id="eveningTitle">晚高峰 17:40</th>
+            </tr>
+          </thead>
+          <tbody id="weatherBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="footer">
+      数据来源：<a href="https://open-meteo.com/" target="_blank">Open-Meteo</a> 小时级天气 API
+    </div>
+  </div>
+
+  <script>
+    // 汕头 各区/街道/镇 经纬度（精确坐标）
+    const towns = {
+      // 龙湖区（默认选中：珠池街道）
+      "龙湖区-珠池街道": [23.3647, 116.7422],
+      "龙湖区-金霞街道": [23.3701, 116.7288],
+      "龙湖区-新津街道": [23.3685, 116.7511],
+      "龙湖区-鸥汀街道": [23.3892, 116.7335],
+      "龙湖区-龙祥街道": [23.3786, 116.7402],
+      "龙湖区-外砂街道": [23.3754, 116.7769],
+      "龙湖区-龙华街道": [23.3821, 116.7903],
+      "龙湖区-新溪街道": [23.3718, 116.8075],
+      "龙湖区-龙腾街道": [23.3596, 116.7644],
+
+      // 金平区
+      "金平区-东方街道": [23.3652, 116.7081],
+      "金平区-金厦街道": [23.3698, 116.7005],
+      "金平区-大华街道": [23.3625, 116.7033],
+      "金平区-光华街道": [23.3681, 116.6876],
+      "金平区-乌桥街道": [23.3614, 116.6829],
+      "金平区-永祥街道": [23.3586, 116.6765],
+      "金平区-鮀莲街道": [23.4051, 116.6217],
+      "金平区-鮀江街道": [23.3924, 116.6483],
+      "金平区-月浦街道": [23.4085, 116.6702],
+      "金平区-岐山街道": [23.3956, 116.6811],
+      "金平区-小公园街道": [23.3592, 116.6894],
+      "金平区-金东街道": [23.3741, 116.6957],
+
+      // 濠江区
+      "濠江区-达濠街道": [23.2826, 116.6883],
+      "濠江区-马滘街道": [23.2751, 116.6812],
+      "濠江区-广澳街道": [23.2638, 116.7256],
+      "濠江区-滨海街道": [23.2914, 116.6679],
+      "濠江区-河浦街道": [23.2785, 116.6337],
+      "濠江区-玉新街道": [23.2869, 116.6522],
+
+      // 澄海区
+      "澄海区-凤翔街道": [23.4671, 116.7538],
+      "澄海区-澄华街道": [23.4625, 116.7396],
+      "澄海区-广益街道": [23.4589, 116.7241],
+      "澄海区-隆都镇": [23.4816, 116.6753],
+      "澄海区-莲下镇": [23.4752, 116.7869],
+      "澄海区-莲上镇": [23.4894, 116.8002],
+      "澄海区-溪南镇": [23.5017, 116.8245],
+      "澄海区-东里镇": [23.5268, 116.8511],
+      "澄海区-盐鸿镇": [23.5542, 116.8807],
+      "澄海区-上华镇": [23.4418, 116.7053],
+
+      // 潮阳区
+      "潮阳区-文光街道": [23.2591, 116.5814],
+      "潮阳区-棉北街道": [23.2725, 116.5869],
+      "潮阳区-城南街道": [23.2468, 116.5883],
+      "潮阳区-金浦街道": [23.2514, 116.5572],
+      "潮阳区-海门镇": [23.2015, 116.6248],
+      "潮阳区-和平镇": [23.2647, 116.4852],
+      "潮阳区-谷饶镇": [23.3217, 116.4526],
+      "潮阳区-陈店镇": [23.2815, 116.4008],
+
+      // 潮南区
+      "潮南区-峡山街道": [23.2338, 116.4217],
+      "潮南区-陇田镇": [23.1865, 116.4793],
+      "潮南区-司马浦镇": [23.2541, 116.4428],
+      "潮南区-两英镇": [23.2417, 116.3754],
+      "潮南区-胪岗镇": [23.2108, 116.4036],
+      "潮南区-成田镇": [23.1974, 116.4471],
+
+      // 南澳县
+      "南澳县-后宅镇": [23.4285, 116.8573],
+      "南澳县-云澳镇": [23.3852, 116.8869],
+      "南澳县-深澳镇": [23.4571, 116.8724]
+    };
+
+    const townSelect = document.getElementById("townSelect");
+    const weatherBody = document.getElementById("weatherBody");
+    const time1 = document.getElementById("time1");
+    const time2 = document.getElementById("time2");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const morningTitle = document.getElementById("morningTitle");
+    const eveningTitle = document.getElementById("eveningTitle");
+
+    // 初始化街道选择
+    for (let town in towns) {
+      const option = document.createElement("option");
+      option.value = town;
+      option.innerText = town;
+      // 默认选中：龙湖区珠池街道
+      if (town === "龙湖区-珠池街道") {
+        option.selected = true;
+      }
+      townSelect.appendChild(option);
+    }
+
+    // 更新标题时间
+    time1.addEventListener("input", () => {
+      morningTitle.innerText = "上午 " + time1.value;
+    });
+
+    time2.addEventListener("input", () => {
+      eveningTitle.innerText = "晚高峰 " + time2.value;
+    });
+
+    // 刷新按钮点击
+    refreshBtn.addEventListener("click", () => {
+      loadWeather();
+    });
+
+    // 街道切换
+    townSelect.addEventListener("change", () => {
+      loadWeather();
+    });
+
+    // 获取指定时间的天气
+    function getHourWeather(hourly, date, time) {
+      const hour = time.split(":")[0];
+      const target = `${date}T${hour}:00`;
+      const index = hourly.time.indexOf(target);
+      
+      if (index === -1) {
+        return { rain: 0, temp: 25 };
+      }
+
+      return {
+        rain: hourly.precipitation_probability[index],
+        temp: hourly.temperature_2m[index]
+      };
+    }
+
+    // 判断骑行条件
+    function judgeRide(rain, temp) {
+      if (rain >= 80) {
+        return {
+          text: "强降雨，不适合骑行",
+          className: "bad",
+          icon: "fas fa-cloud-showers-heavy"
+        };
+      }
+
+      if (rain >= 50) {
+        return {
+          text: "中雨风险，一般",
+          className: "normal",
+          icon: "fas fa-cloud-rain"
+        };
+      }
+
+      if (rain >= 30) {
+        return {
+          text: "小雨概率，谨慎",
+          className: "normal",
+          icon: "fas fa-cloud-drizzle"
+        };
+      }
+
+      if (temp >= 36) {
+        return {
+          text: "高温暴晒，一般",
+          className: "normal",
+          icon: "fas fa-sun"
+        };
+      }
+
+      if (temp <= 5) {
+        return {
+          text: "低温寒冷，一般",
+          className: "normal",
+          icon: "fas fa-snowflake"
+        };
+      }
+
+      return {
+        text: "天气良好，适合骑行",
+        className: "good",
+        icon: "fas fa-check-circle"
+      };
+    }
+
+    // 加载天气数据
+    async function loadWeather() {
+      // 显示加载状态
+      weatherBody.innerHTML = `
+        <tr>
+          <td colspan="2">
+            <div class="loading">
+              <i class="fas fa-spinner"></i>
+              <div>正在加载小时级天气数据...</div>
+            </div>
+          </td>
+        </tr>
+      `;
+      
+      refreshBtn.classList.add("loading");
+
+      const town = townSelect.value;
+      const lat = towns[town][0];
+      const lon = towns[town][1];
+
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation_probability&daily=temperature_2m_max,temperature_2m_min&timezone=Asia%2FShanghai&forecast_days=7`;
+
+      try {
+        const res = await fetch(url);
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
+        const data = await res.json();
+        weatherBody.innerHTML = "";
+
+        data.daily.time.forEach((date, index) => {
+          const morning = getHourWeather(data.hourly, date, time1.value);
+          const evening = getHourWeather(data.hourly, date, time2.value);
+
+          const morningJudge = judgeRide(morning.rain, morning.temp);
+          const eveningJudge = judgeRide(evening.rain, evening.temp);
+
+          const tr = document.createElement("tr");
+
+          tr.innerHTML = `
+            <td class="${morningJudge.className}">
+              <div class="date-text">${date}</div>
+              <div class="temp-range">
+                <i class="fas fa-thermometer-half"></i>
+                ${data.daily.temperature_2m_min[index]}°C ~ ${data.daily.temperature_2m_max[index]}°C
+              </div>
+              <div class="weather-info">
+                <div class="weather-main">
+                  <i class="${morningJudge.icon}"></i>
+                  降雨概率：${morning.rain}%
+                </div>
+                <div class="weather-detail">温度：${morning.temp}°C</div>
+                <div class="weather-detail">${morningJudge.text}</div>
+              </div>
+            </td>
+            <td class="${eveningJudge.className}">
+              <div class="weather-info">
+                <div class="weather-main">
+                  <i class="${eveningJudge.icon}"></i>
+                  降雨概率：${evening.rain}%
+                </div>
+                <div class="weather-detail">温度：${evening.temp}°C</div>
+                <div class="weather-detail">${eveningJudge.text}</div>
+              </div>
+            </td>
+          `;
+
+          weatherBody.appendChild(tr);
+        });
+
+      } catch (e) {
+        console.error("天气加载失败:", e);
+        weatherBody.innerHTML = `
+          <tr>
+            <td colspan="2">
+              <div class="error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>天气加载失败，请稍后重试</div>
+                <div style="font-size: 12px; margin-top: 8px; color: var(--gray-400);">
+                  错误信息：${e.message}
+                </div>
+              </div>
+            </td>
+          </tr>
+        `;
+      } finally {
+        refreshBtn.classList.remove("loading");
+      }
+    }
+
+    // 初始加载
+    loadWeather();
+  </script>
+</body>
+</html>
